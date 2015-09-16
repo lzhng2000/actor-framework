@@ -50,13 +50,15 @@ class singletons {
 public:
   singletons() = delete;
 
-  static constexpr size_t max_plugins = 3;
+  static constexpr size_t max_plugins = 4;
 
   static constexpr size_t middleman_plugin_id = 0;   // io lib
 
   static constexpr size_t opencl_plugin_id = 1;      // OpenCL lib
 
   static constexpr size_t probe_plugin_id = 2;       // probe hooks
+
+  static constexpr size_t replication_plugin_id = 3; // Replication lib
 
   static logging* get_logger();
 
