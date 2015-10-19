@@ -319,7 +319,6 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libcaf_opencl/CMakeLists.txt")
   install(DIRECTORY libcaf_opencl/caf/ DESTINATION include/caf
           FILES_MATCHING PATTERN "*.hpp")
 endif()
-
 # install includes from replication
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libcaf_replication/CMakeLists.txt")
   install(DIRECTORY libcaf_replication/caf/ DESTINATION include/caf
@@ -446,6 +445,12 @@ if(NOT CAF_NO_OPENCL)
     add_optional_caf_binaries(libcaf_opencl/examples)
   endif()
 endif()
+
+# build replication library if not being told otherwise
+add_optional_caf_lib(replication)
+
+# build replication examples
+add_optional_caf_binaries(libcaf_replication/examples)
 
 # build RIAC library if not being told otherwise
 add_optional_caf_lib(riac)
