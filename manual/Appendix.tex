@@ -1,16 +1,16 @@
 \section{Appendix}
 
-\subsection{Class \texttt{option}}
-\label{Appendix::Option}
+\subsection{Class \texttt{maybe}}
+\label{Appendix::maybe}
 
-Defined in header \lstinline^"caf/option.hpp"^.
+Defined in header \lstinline^"caf/maybe.hpp"^.
 
 \begin{lstlisting}
-template<typename T>
-class option;
+template<class T>
+class maybe;
 \end{lstlisting}
 
-Represents an optional value.
+Represents an optional value or error.
 
 {\small
 \begin{tabular*}{\textwidth}{m{0.5\linewidth}m{0.45\linewidth}}
@@ -20,32 +20,40 @@ Represents an optional value.
   \hline
   \lstinline^type^ & \lstinline^T^ \\
   \hline
+  \lstinline^errortype^ & \lstinline^error^ \\
+  \hline
   \\
   \multicolumn{2}{l}{\large{\textbf{Member Functions}}\vspace{3pt}} \\
   \hline
-  \lstinline^option()^ & Constructs an empty option \\
+  \lstinline^maybe()^ & Constructs an empty maybe \\
   \hline
-  \lstinline^option(T value)^ & Initializes \lstinline^this^ with \lstinline^value^ \\
+  \lstinline^maybe(T)^\newline\lstinline^maybe& operator=(T)^& Initialize or set a value \\
   \hline
-  \lstinline^option(const option&)^\newline\lstinline^option(option&&)^ & Copy/move construction \\
+  \lstinline^maybe(error)^\newline\lstinline^maybe& operator=(error)^& Initialize or set an error \\
   \hline
-  \lstinline^option& operator=(const option&)^\newline\lstinline^option& operator=(option&&)^ & Copy/move assignment \\
+  \lstinline^maybe(const maybe&)^\newline\lstinline^maybe& operator=(const maybe&)^& Copy construct/assign \\
+  \hline
+  \lstinline^maybe(maybe&&)^\newline\lstinline^maybe& operator=(maybe&&)^& Move construct/assign \\
   \hline
   \\
   \multicolumn{2}{l}{\textbf{Observers}\vspace{3pt}} \\
   \hline
   \lstinline^bool valid()^\newline\lstinline^explicit operator bool()^ & Returns \lstinline^true^ if \lstinline^this^ has a value \\
   \hline
-  \lstinline^bool empty()^\newline\lstinline^bool operator!()^ & Returns \lstinline^true^ if \lstinline^this^ does \textbf{not} has a value \\
+  \lstinline^bool empty()^ & Returns \lstinline^true^ if \lstinline^this^ is default-constructed \\
   \hline
-  \lstinline^const T& get()^\newline\lstinline^const T& operator*()^ & Access stored value \\
+  \lstinline^bool invalid()^ & Returns \lstinline^true^ if \lstinline^this^ has an error \\
   \hline
-  \lstinline^const T& get_or_else(const T& x)^ & Returns \lstinline^get()^ if valid, \lstinline^x^ otherwise  \\
+  \lstinline^bool operator!()^ & Returns \lstinline^!valid()^ \\
+  \hline
+  \lstinline^const T& get()^\newline\lstinline^const T& operator*()^ & Returns the stored value \\
+  \hline
+  \lstinline^error_type error()^ & Returns the stored error \\
   \hline
   \\
   \multicolumn{2}{l}{\textbf{Modifiers}\vspace{3pt}} \\
   \hline
-  \lstinline^T& get()^\newline\lstinline^T& operator*()^ & Access stored value \\
+  \lstinline^T& get()^\newline\lstinline^T& operator*()^ & Returns the stored value \\
   \hline
 \end{tabular*}
 }
@@ -75,9 +83,10 @@ using std::endl;
 using done_atom = atom_constant<atom("done")>;
 
 int main() {
+  actor_system system;
   std::srand(std::time(0));
   for (int i = 1; i <= 50; ++i) {
-    spawn<blocking_api>([i](blocking_actor* self) {
+    system.spawn<blocking_api>([i](blocking_actor* self) {
       aout(self) << "Hi there! This is actor nr. "
                  << i << "!" << endl;
       std::chrono::milliseconds tout{std::rand() % 1000};
@@ -90,9 +99,6 @@ int main() {
       );
     });
   }
-  // wait until all other actors we've spawned are done
-  await_all_actors_done();
-  shutdown();
 }
 \end{lstlisting}
 
@@ -174,7 +180,7 @@ The following table summarizes the changes made to the API.
 
 \subsubsection{0.10 $\Rightarrow$ 0.11}
 
-Version 0.11 introduced new, optional components.
+Version 0.11 introduced new, maybeal components.
 The core library itself, however, mainly received optimizations and bugfixes with one exception: the member function \lstinline^on_exit^ is no longer virtual.
 You can still provide it to define a custom exit handler, but you must not use \lstinline^override^.
 
@@ -197,7 +203,7 @@ This feature has been removed without substitution.
 
 This release removes the (since 0.9 deprecated) \lstinline^cppa^ headers and deprecates all \lstinline^*_send_tuple^ versions (simply use the function without \lstinline^_tuple^ suffix). \lstinline^local_actor::on_exit^ once again became virtual.
 
-In case you were using the old \lstinline^cppa::options_description^ API, you can migrate to the new API based on \lstinline^extract^ (cf. \ref{Sec::Messages::ExtractOpts}).
+In case you were using the old \lstinline^cppa::maybes_description^ API, you can migrate to the new API based on \lstinline^extract^ (cf. \ref{Sec::Messages::ExtractOpts}).
 
 Most importantly, version 0.13 slightly changes \lstinline^last_dequeued^ and \lstinline^last_sender^.
 Both functions will now cause undefined behavior (dereferencing a \lstinline^nullptr^) instead of returning dummy values when accessed from outside a callback or after forwarding the current message.
@@ -210,3 +216,7 @@ Their replacements are named \lstinline^current_message^ and \lstinline^current_
 The function \lstinline^timed_sync_send^ has been removed. It offered an alternative way of defining message handlers, which is inconsistent with the rest of the API.
 
 The policy classes \lstinline^broadcast^, \lstinline^random^, and \lstinline^round_robin^ in \lstinline^actor_pool^ were removed and replaced by factory functions using the same name.
+
+\subsection{0.14 $\Rightarrow$ 0.15}
+
+

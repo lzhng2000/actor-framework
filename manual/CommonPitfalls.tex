@@ -1,6 +1,8 @@
 \section{Common Pitfalls}
 \label{Sec::Pitfalls}
 
+This Section highlights common mistakes or C++ subtleties that can show up when programming in \lib.
+
 \subsection{Defining Patterns}
 
 \begin{itemize}
@@ -30,20 +32,20 @@ ok2.assign(
 \subsection{Event-Based API}
 
 \begin{itemize}
-\item The functions \lstinline^become^ and \lstinline^handle_response^ do not block, i.e., always return immediately.
+\item The functions \lstinline^become^ does not block, i.e., always return immediately.
 Thus, one should \textit{always} capture by value in lambda expressions, because all references on the stack will cause undefined behavior if the lambda expression is executed.
 \end{itemize}
 
-\subsection{Synchronous Messages}
+\subsection{Requests}
 
 \begin{itemize}
 
 \item
-A handle returned by \lstinline^sync_send^ represents \emph{exactly one} response message.
+A handle returned by \lstinline^request^ represents \emph{exactly one} response message.
 Therefore, it is not possible to receive more than one response message.
 
 \item
-The handle returned by \lstinline^sync_send^ is bound to the calling actor.
+The handle returned by \lstinline^request^ is bound to the calling actor.
 It is not possible to transfer a handle to a response to another actor.
 
 \end{itemize}
@@ -59,10 +61,4 @@ However, sharing \textit{data} between actors is fine, as long as the data is \t
 The simplest way to meet the lifetime guarantee is by storing the data in smart pointers such as \lstinline^std::shared_ptr^.
 Nevertheless, the recommended way of sharing informations is message passing.
 Sending the same message to multiple actors does not result in copying the data several times.
-\end{itemize}
-
-\subsection{Constructors of Class-based Actors}
-
-\begin{itemize}
-\item You should \textbf{not} try to send or receive messages in a constructor or destructor, because the actor is not fully initialized at this point.
 \end{itemize}

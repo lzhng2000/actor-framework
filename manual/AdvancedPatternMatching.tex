@@ -1,0 +1,118 @@
+\section{Advanced Pattern Matching}
+\label{Sec::AdvancedPatternMatching}
+
+\textbf{Note:} The features described in this Section are not available when using Visual Studio due to limitations of the compiler.
+Avoid those features if Windows is one of your target platforms.
+
+The advanced pattern matching features in \lib allow you to match on values and to transform data while matching.
+An advanced match case begins with a call to the function \lstinline^on^, which returns an intermediate object providing \lstinline^operator>>^.
+The right-hand side of the operator denotes a callback, usually a lambda expression.
+
+The basic syntax shown in \S\,\ref{Sec::PatternMatching} deduces all types exclusively from provided callbacks.
+When using advanced match cases, the types for the match can be defined explicitly, as shown below.
+
+\begin{lstlisting}
+behavior verbose_bhvr1{
+  on<int>() >> [](int i) { /*...*/ },
+  on<int, float>() >> [](int i, float f) { /*...*/ },
+  on<int, int, int>() >> [](int a, int b, int c) { /*...*/ }
+};
+\end{lstlisting}
+
+The behavior \lstinline^verbose_bhvr1^ is semantically equal to \lstinline^bhvr1^ shown in \S\,\ref{Sec::PatternMatching::Basics}.
+It is worth mentioning that passing the lambdas directly is more efficient, since it allows \lib to select a special-purpose implementation.
+The function \lstinline^on^ can be used in two ways.
+Either with template parameters only or with function parameters only.
+The latter version deduces all types from its arguments and matches for both type and value.
+To match for any value of a given type, the template \lstinline^val<T>^ can be used, as shown in the following example.
+
+\begin{lstlisting}
+behavior bhvr3{
+  on(42) >> [](int i) { assert(i == 42); },
+  on("hello world") >> [] { /* ... */ },
+  on("print", val<std::string>) >> [](const std::string& what) {
+  // ...
+  }
+};
+\end{lstlisting}
+
+\textbf{Note:} The given callback can have less arguments than the pattern.
+But it is only allowed to skip arguments from left to right.
+
+\begin{lstlisting}
+on<int, float, double>() >> [](double) { /*...*/ }             // ok
+on<int, float, double>() >> [](float, double) { /*...*/ }      // ok
+on<int, float, double>() >> [](int, float, double) { /*...*/ } // ok
+
+on<int, float, double>() >> [](int i) { /*...*/ } // compiler error
+\end{lstlisting}
+
+To avoid redundancy when working with match expressions, \lstinline^arg_match^ can be used as last argument to the function \lstinline^on^.
+This causes the compiler to deduce all further types from the signature of any given callback.
+
+\begin{lstlisting}
+on<int, int>() >> [](int a, int b) { /*...*/ }
+// is equal to:
+on(arg_match) >> [](int a, int b) { /*...*/ }
+\end{lstlisting}
+
+Note that \lstinline^arg_match^ must be passed as last parameter.
+If all types should be deduced from the callback signature, \lstinline^on_arg_match^ can be used, which is a faster alternative for \lstinline^on(arg_match)^.
+However, \lstinline^on_arg_match^ is used implicitly whenever a callback is used without preceding match expression.
+
+\subsection{Wildcards}
+\label{Sec::PatternMatching::Wildcards}
+
+The type \lstinline^anything^ can be used as wildcard to match any number of any types.
+%The \lstinline^constexpr^ value \lstinline^any_vals^ can be used as function argument if \lstinline^on^ is used without template paremeters.
+A pattern created by \lstinline^on<anything>()^ or its alias \lstinline^others^ is useful to define a default case.
+For patterns defined without template parameters, the \lstinline^constexpr^ value \lstinline^any_vals^ can be used as function argument.
+The constant \lstinline^any_vals^ is of type \lstinline^anything^ and is nothing but syntactic sugar for defining patterns.
+
+\begin{lstlisting}[language=C++]
+on<int, anything>() >> [](int i) {
+  // tuple with int as first element
+},
+on(any_vals, arg_match) >> [](int i) {
+  // tuple with int as last element
+  // "on(any_vals, arg_match)" is equal to "on(anything{}, arg_match)"
+},
+others >> [] {
+  // everything else (default handler)
+  // "others" is equal to "on<anything>()" and "on(any_vals)"
+}
+\end{lstlisting}
+
+\subsection{Projections}
+
+Projections perform type conversions or extract data from a given input.
+If a callback expects an integer but the received message contains a string, a projection can be used to perform a type conversion on-the-fly.
+This conversion must not have side-effects and must not throw exceptions.
+A failed projection is not an error, it simply indicates that a pattern is not matched.
+Let us have a look at a simple example.
+
+\begin{lstlisting}
+auto intproj = [](const string& str) -> option<int> {
+  char* endptr = nullptr;
+  int result = static_cast<int>(strtol(str.c_str(), &endptr, 10));
+  if (endptr != nullptr && *endptr == '\0') return result;
+  return {};
+};
+message_handler fun {
+  on(intproj) >> [](int i) {
+    // case 1: successfully converted a string
+  },
+  [](const string& str) {
+    // case 2: str is not an integer
+  }
+};
+\end{lstlisting}
+
+The lambda \lstinline^intproj^ is a \lstinline^string^ $\Rightarrow$ \lstinline^int^ projection, but note that it does not return an integer.
+It returns \lstinline^option<int>^, because the projection is not guaranteed to always succeed.
+An empty \lstinline^option^ indicates, that a value does not have a valid mapping to an integer.
+A pattern does not match if a projection failed.
+
+\textbf{Note}: Functors used as projection must take exactly one argument and must return a value.
+The types for the pattern are deduced from the functor's signature.
+If the functor returns an \lstinline^option<T>^, then \lstinline^T^ is deduced.

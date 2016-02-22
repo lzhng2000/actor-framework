@@ -4,7 +4,7 @@ Before diving into the API of \lib, we would like to take the opportunity to dis
 
 \subsection{Actor Model}
 
-The actor model describes concurrent entities---actors---that do not share state and communicate only via message passing.
+The actor model describes concurrent entities---actors---that do not share state and communicate only via asynchronous message passing.
 By decoupling concurrently running software components via message passing, the actor model avoids race conditions by design.
 Actors can create---``spawn''---new actors and monitor each other to build fault-tolerant, hierarchical systems.
 Since message passing is network transparent, the actor model applies to both concurrency and distribution.
@@ -22,8 +22,7 @@ In this regard, \lib follows the C++ philosophy ``building the highest abstracti
 
 You will find that \lib has not simply adopted exiting implementations based on the actor model such as Erlang or the Akka library.
 Instead, \lib aims to provide a modern C++ API allowing for type-safe as well as dynamically typed messaging.
-Hence, most aspects of our system are familiar to developers having experience with other actor systems, but there are also slight differences in terminology.
-However, neither \lib nor this manual require any foreknowledge.
+Hence, most aspects of our system are familiar to developers having experience with other actor systems, but there are also slight differences.
 
 \subsubsection{Actor Address}
 
@@ -38,17 +37,19 @@ An actor handle contains the address of an actor along with its type information
 In order to send an actor a message, one needs to have a handle to it -- the address alone is not sufficient.
 The distinction between handles and addresses -- which is unique to \lib when comparing it to other actor systems -- is a consequence of the design decision to support both untyped and typed actors.
 
-\subsubsection{Untyped Actors}
+\subsubsection{Dynamically Typed Actor}
 
-An untyped actor does not constrain the type of messages it receives, i.e., a handle to an untyped actor accepts any kind of message.
-That does of course not mean that untyped actors must handle all possible types of messages.
-Choosing typed vs untyped actors is mostly a matter of taste.
-Untyped actors allow developers to build prototypes faster, while typed actors allow the compiler to fetch more errors at compile time.
+A dynamically typed actor accepts any kind of message and dispatches dynamically at the receiver.
+This is the ``traditional'' messaging style found in implementations like Erlang or Akka.
+The upside of this approach is (usually) faster prototyping and less code.
+This comes at the cost of requiring excessive testing.
 
-\subsubsection{Typed Actor}
+\subsubsection{Statically Typed Actor}
 
-A typed actor defines its messaging interface, i.e., both input and output types, in its type.
-This allows the compiler to check message types statically.
+CAF achieves static type-checking for actors by defining abstract messaging interfaces.
+Since interfaces define both input and output types, CAF is able to statically ensure correctness both ways.
+The upside of this approach is much higher robustness to code changes and fewer possible runtime errors.
+This approach requires slightly more code, as developers have to define and use messaging interfaces.
 
 \subsubsection{Spawning}
 
@@ -57,14 +58,13 @@ This allows the compiler to check message types statically.
 \subsubsection{Monitoring}
 \label{sec:monitoring}
 
-A monitored actor sends a ``down message'' to all actors monitoring it as part of its termination.
+A monitored actor sends a ``down'' message to all actors monitoring it as part of its termination.
 This allows actors to supervise other actors and to take measures when one of the supervised actors failed, i.e., terminated with a non-normal exit reason.
 
 \subsubsection{Links}
 
 A link is bidirectional connection between two actors.
-Each actor sends an ``exit message'' to all of its links as part of its termination.
-Unlike down messages (cf. \ref{sec:monitoring}), the default behavior for received exit messages causes the receiving actor to terminate for the same reason if the link has failed, i.e., terminated with a non-normal exit reason.
+Each actor sends an ``exit'' message to all of its links as part of its termination.
+Unlike ``down'' messages (see \S\,\ref{sec:monitoring}), the default behavior for received exit messages causes the receiving actor to terminate as well when receiving a non-normal exit reason.
 This allows developers to create a set of actors with the guarantee that either all or no actors are alive.
-The default behavior can be overridden, i.e., exit message can be ``trapped''.
-When trapping exit messages, they are received as any other ordinary message and can be handled by the actor.
+The default behavior can be overridden by ``trapping'' exit messages and handling them manually.
