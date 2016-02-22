@@ -1,0 +1,106 @@
+\section{Message Passing}
+\label{send}
+
+\begin{lstlisting}
+template<class... Ts>
+void send(actor whom, Ts&&... xs);
+\end{lstlisting}
+
+Messages can be sent by using the member function \lstinline^send^.
+The variadic template parameter pack \lstinline^xs...^ is converted to a message and then enqueued to the mailbox of \lstinline^whom^.
+
+\begin{lstlisting}
+void some_fun(event_based_actor* self) {
+  actor other = self->spawn(...);
+  // send using the variadic template
+  self->send(other, 1, 2, 3);
+  // send with a message object
+  auto msg = make_message(1, 2, 3);
+  self->send(other, msg);
+}
+\end{lstlisting}
+
+\subsection{Replying to Messages}
+\label{reply}
+
+The return value of a message handler is used as response message.
+Actors can also use the result of a \lstinline^sync_send^ to answer to a request, as shown below.
+
+\begin{lstlisting}
+behavior client(event_based_actor* self, const actor& master) {
+  return {
+    [=](int x, int y) {
+      // the return value implicitly is the response
+      return x + y;
+    }
+  };
+};
+\end{lstlisting}
+
+\subsection{Delaying Messages}
+
+Messages can be delayed by using the function \lstinline^delayed_send^.
+
+\begin{lstlisting}
+using poll_atom = atom_constant<atom("poll")>;
+behavior poller(event_based_actor* self) {
+  using std::chrono::seconds;
+  self->delayed_send(self, seconds(1), poll_atom::value);
+  return {
+    [](poll_atom) {
+      // poll a resource
+      // ...
+      // schedule next polling
+      self->delayed_send(self, seconds(1), poll_atom::value);
+    }
+  };
+}
+\end{lstlisting}
+
+\clearpage
+\subsection{Forwarding Messages to Dynamically Typed Actors}
+\label{forward}
+
+The member function \lstinline^forward_to^ forwards the last dequeued message to a dynamically typed actor.
+Forwarding a message will also transfer responsibility, i.e., the receiver of the forwarded message can reply as usual and the original sender of the message.
+The following diagram illustrates forwarding of a synchronous message from actor \texttt{B} to actor \texttt{C}.
+
+\begin{footnotesize}
+\begin{verbatim}
+               A                  B                  C
+               |                  |                  |
+               | ---(request)---> |                  |
+               |                  | --(forward_to)-> |
+               |                  X                  |---\
+               |                                     |   | compute
+               |                                     |   | result
+               |                                     |<--/
+               | <-------------(reply)-------------- |
+               |                                     X
+               |---\
+               |   | handle
+               |   | response
+               |<--/
+               |
+               X
+\end{verbatim}
+\end{footnotesize}
+
+The forwarding is completely transparent to actor \texttt{C}. It will see actor \texttt{A} as sender of the message.
+Actor \texttt{A} will see actor \texttt{C} as sender of the response message instead of actor \texttt{B} and thus could recognize the forwarding by evaluating \lstinline^self->current_sender()^.
+
+Forwarding is limited to dynamically typed actors, because the compiler does not have the proper type information inside a message handler. Returning the result of \lstinline^self->forward_to(other);^ from a message handler informs the runtime that it should not generate an implicit response message. The following example implements the diagram shown above.
+
+\clearpage
+\lstinputlisting{../examples/message_passing/forwarding.cpp}
+
+\clearpage
+\subsection{Delegating Messages}
+\label{delegate}
+
+A type-safe alternative to \lstinline^forward_to^ is \lstinline^delegate^.
+When delegating a message, an actor creates a new message, but transfers responsibility with it.
+Returning the result of \lstinline^delegate(...)^ suppresses the implicit response message and allows the compiler to check the result type.
+The following example implements the same use case as shown in \S\,\ref{forward}, but delegates the request instead of forwarding it.
+
+\lstinputlisting{../examples/message_passing/delegating.cpp}

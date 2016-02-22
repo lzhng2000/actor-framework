@@ -1,5 +1,5 @@
 \section{Advanced Pattern Matching}
-\label{Sec::AdvancedPatternMatching}
+\label{advanced-pattern-matching}
 
 \textbf{Note:} The features described in this Section are not available when using Visual Studio due to limitations of the compiler.
 Avoid those features if Windows is one of your target platforms.
@@ -8,7 +8,7 @@ The advanced pattern matching features in \lib allow you to match on values and 
 An advanced match case begins with a call to the function \lstinline^on^, which returns an intermediate object providing \lstinline^operator>>^.
 The right-hand side of the operator denotes a callback, usually a lambda expression.
 
-The basic syntax shown in \S\,\ref{Sec::PatternMatching} deduces all types exclusively from provided callbacks.
+The basic syntax shown in \S\,\ref{pattern-matching} deduces all types exclusively from provided callbacks.
 When using advanced match cases, the types for the match can be defined explicitly, as shown below.
 
 \begin{lstlisting}
@@ -19,7 +19,7 @@ behavior verbose_bhvr1{
 };
 \end{lstlisting}
 
-The behavior \lstinline^verbose_bhvr1^ is semantically equal to \lstinline^bhvr1^ shown in \S\,\ref{Sec::PatternMatching::Basics}.
+The behavior \lstinline^verbose_bhvr1^ is semantically equal to \lstinline^bhvr1^ shown in \S\,\ref{pattern-matching-basics}.
 It is worth mentioning that passing the lambdas directly is more efficient, since it allows \lib to select a special-purpose implementation.
 The function \lstinline^on^ can be used in two ways.
 Either with template parameters only or with function parameters only.
@@ -61,13 +61,12 @@ If all types should be deduced from the callback signature, \lstinline^on_arg_ma
 However, \lstinline^on_arg_match^ is used implicitly whenever a callback is used without preceding match expression.
 
 \subsection{Wildcards}
-\label{Sec::PatternMatching::Wildcards}
 
 The type \lstinline^anything^ can be used as wildcard to match any number of any types.
 %The \lstinline^constexpr^ value \lstinline^any_vals^ can be used as function argument if \lstinline^on^ is used without template paremeters.
 A pattern created by \lstinline^on<anything>()^ or its alias \lstinline^others^ is useful to define a default case.
 For patterns defined without template parameters, the \lstinline^constexpr^ value \lstinline^any_vals^ can be used as function argument.
-The constant \lstinline^any_vals^ is of type \lstinline^anything^ and is nothing but syntactic sugar for defining patterns.
+The constant \lstinline^any_vals^ is of type \lstinline^anything^ and is merely syntactic sugar for defining patterns.
 
 \begin{lstlisting}[language=C++]
 on<int, anything>() >> [](int i) {

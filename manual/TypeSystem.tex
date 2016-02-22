@@ -1,5 +1,5 @@
 \section{Platform-Independent Type System}
-\label{Sec::TypeSystem}
+\label{type-system}
 
 \lib provides a fully network transparent communication between actors.
 Thus, \lib needs to serialize and deserialize messages.
@@ -19,7 +19,6 @@ The sole purpose of this simple abstraction is to enable the pattern matching en
 When using a \lstinline^message_builder^, each element is stored as a \lstinline^uniform_value^.
 
 \subsection{User-Defined Data Types in Messages}
-\label{Sec::TypeSystem::UserDefined}
 
 All user-defined types must be explicitly ``announced'' so that \lib can (de)serialize them correctly, as shown in the example below.
 

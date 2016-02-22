@@ -1,5 +1,4 @@
 \section{Network IO}
-\label{Sec::NetworkIO}
 
 When communicating to other services in the network, sometimes low-level socket IO is inevitable.
 For this reason, \lib provides \emph{brokers}.
@@ -18,31 +17,31 @@ For convenience, \lstinline^spawn_io_server^ can be used to spawn a new broker l
 \begin{lstlisting}
 template<spawn_options Os = no_spawn_options,
          typename F = std::function<behavior (broker*)>,
-         typename... Ts>
-actor spawn_io(F fun, Ts&&... args);
+         class... Ts>
+actor spawn_io(F fun, Ts&&... xs);
 
 template<spawn_options Os = no_spawn_options,
          typename F = std::function<behavior (broker*)>,
-         typename... Ts>
+         class... Ts>
 actor spawn_io_client(F fun,
                       input_stream_ptr in,
                       output_stream_ptr out,
-                      Ts&&... args);
+                      Ts&&... xs);
 
 template<spawn_options Os = no_spawn_options,
          typename F = std::function<behavior (broker*)>,
-         typename... Ts>
-actor spawn_io_client(F fun, string host, uint16_t port, Ts&&... args);
+         class... Ts>
+actor spawn_io_client(F fun, string host, uint16_t port, Ts&&... xs);
 
 template<spawn_options Os = no_spawn_options,
          typename F = std::function<behavior (broker*)>,
-         typename... Ts>
-actor spawn_io_server(F fun, uint16_t port, Ts&&... args);
+         class... Ts>
+actor spawn_io_server(F fun, uint16_t port, Ts&&... xs);
 \end{lstlisting}
 
 \clearpage
 \subsection{Broker Interface}
-\label{Sec::NetworkIO::BrokerInterface}
+\label{broker-interface}
 
 \begin{lstlisting}
 class broker;
@@ -59,7 +58,7 @@ class broker;
   \hline
   \lstinline^void flush(connection_handle hdl)^ & Sends the data from the output buffer \\
   \hline
-  \lstinline^template <class F, class... Ts>^ \lstinline^actor fork(F fun,^ \lstinline^connection_handle hdl, Ts&&... args)^ & Spawns a new broker that takes ownership of given connection \\
+  \lstinline^template <class F, class... Ts>^ \lstinline^actor fork(F fun,^ \lstinline^connection_handle hdl, Ts&&... xs)^ & Spawns a new broker that takes ownership of given connection \\
   \hline
   \lstinline^size_t num_connections()^ & Returns the number of open connections \\
   \hline
@@ -93,7 +92,7 @@ struct new_data_msg {
 
 New incoming data is transmitted to the broker using messages of type \lstinline^new_data_msg^.
 The raw bytes can be accessed as buffer object of type \lstinline^std::vector<char>^.
-The amount of data, i.e., how often this message is received, can be controlled using \lstinline^configure_read^ (see \ref{Sec::NetworkIO::BrokerInterface}).
+The amount of data, i.e., how often this message is received, can be controlled using \lstinline^configure_read^ (see \ref{broker-interface}).
 It is worth mentioning that the buffer is re-used whenever possible.
 This means, as long as the broker does not create any new references to the message by copying it, the middleman will always use only a single buffer per connection.
 

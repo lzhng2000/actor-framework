@@ -1,5 +1,4 @@
-\section{Receiving Messages}
-\label{Sec::Receive}
+\section{Message Passing}
 
 The current \textit{behavior} of an actor is its response to the \textit{next} incoming message and includes (a) sending messages to other actors, (b) creation of more actors, and (c) setting a new behavior.
 
@@ -15,7 +14,7 @@ class printer : public event_based_actor {
   behavior make_behavior() override {
     return {
       others >> [] {
-        cout << to_string(last_dequeued()) << endl;
+        cout << to_string(current_message()) << endl;
       }
     };
   }
@@ -113,7 +112,6 @@ This is unlike other event-based implementations of the actor model such as Akka
 
 \clearpage
 \subsection{Timeouts}
-\label{Sec::Receive::Timeouts}
 
 A behavior set by \lstinline^become^ is invoked whenever a new message arrives.
 If no message ever arrives, the actor would wait forever.
@@ -163,7 +161,7 @@ behavior server(event_based_actor* self) {
   auto die = [=] { self->quit(exit_reason::user_defined); };
   return {
     [=](idle_atom) {
-      auto worker = last_sender();
+      auto worker = current_sender();
       self->become (
         keep_behavior,
         [=](request_atom) {

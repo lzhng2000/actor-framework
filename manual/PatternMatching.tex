@@ -1,5 +1,5 @@
 \section{Pattern Matching}
-\label{Sec::PatternMatching}
+\label{pattern-matching}
 
 Actor programming implies a message passing paradigm.
 This means that defining message handlers is a recurring task.
@@ -9,7 +9,7 @@ Unfortunately, C++ does not provide any pattern matching facilities.
 Hence, we provide an internal domain-specific language to match incoming messages.
 
 \subsection{Basics}
-\label{Sec::PatternMatching::Basics}
+\label{pattern-matching-basics}
 
 Actors can store a set of message callbacks using either \lstinline^behavior^ or \lstinline^message_handler^.
 The difference between the two is that the former stores an optional timeout.
@@ -42,7 +42,7 @@ Please note the change in syntax for the catch-all case.
 The lambda expression passed to the constructor of \lstinline^behavior^ is prefixed by a ''match expression'' and the operator \lstinline^>>^.
 
 \subsection{Atoms}
-\label{Sec::PatternMatching::Atoms}
+\label{atoms}
 
 Assume an actor provides a mathematical service for integers.
 It takes two arguments, performs a predefined operation and returns the result.
@@ -86,5 +86,5 @@ behavior do_math{
 };
 \end{lstlisting}
 
-Atom constants define a static member \lstinline^value^ that can be used on the caller side (see \S\,\ref{Sec::Send}), e.g., \lstinline^send(math_actor, add_atom::value, 1, 2)^.
+Atom constants define a static member \lstinline^value^ that can be used on the caller side (see \S\,\ref{send}), e.g., \lstinline^send(math_actor, add_atom::value, 1, 2)^.
 Please note that the static \lstinline^value^ member does \emph{not} have the type \lstinline^atom_value^, unlike \lstinline^std::integral_constant^ for example.

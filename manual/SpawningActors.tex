@@ -8,7 +8,7 @@ The function \lstinline^spawn^ also takes optional flags as template parameter.
 The flag \lstinline^detached^ causes \lstinline^spawn^ to assign a dedicated thread to the actor, i.e., to opt-out of the cooperative scheduling.
 Convenience flags like \lstinline^linked^ or \lstinline^monitored^ automatically link or monitor to the newly created actor.
 Naturally, these two flags are not available on ``top-level'' spawns.
-Actors that make use of the blocking API---see Section \ref{Sec::BlockingAPI}---must be spawned using the flag \lstinline^blocking_api^.
+Actors that make use of the blocking API---see Section \ref{blocking-api}---must be spawned using the flag \lstinline^blocking_api^.
 Flags are concatenated using the operator \lstinline^+^, as shown in the examples below.
 
 \begin{lstlisting}

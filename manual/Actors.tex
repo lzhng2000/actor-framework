@@ -1,12 +1,24 @@
 \section{Actors}
-\label{Sec::Actors}
+\label{actors}
 
 \lib provides several actor implementations, each covering a particular use case.
-The class \lstinline^local_actor^ is the base class for all implementations, except for (remote) proxy actors.
+Most notably, actors differ in three characteristics: (1) dynamically or statically typed, (2) class-based or function-based, and (3) event-based or using blocking receives.
+These three characteristics can be combined freely.
+For example, an actor can be dynamically typed, implemented as a class and use blocking receives.
+In any case, \lstinline^local_actor^ is the common base class for all user-defined actors.
+
+Dynamically typed actors are more familiar to developers coming from Erlang or Akka.
+They (usually) enable faster prototyping but require extensive unit testing.
+Statically typed actors require more source code but enable the compiler to verify communication between actors.
+Since CAF supports both, however, developers can freely mix both kinds of actors to get the best of both worlds.
+A good rule of thumb is to make use of statically typing for actors that are visible across multiple translation units.
+
+
+
 Hence, \lstinline^local_actor^ provides a common interface for actor operations like trapping exit messages or finishing execution.
 The default actor implementation in \lib is event-based.
 Event-based actors have a very small memory footprint and are thus very lightweight and scalable.
-Context-switching actors are used for actors that make use of the blocking API (see Section \ref{Sec::BlockingAPI}), but do not need to run in a separate thread.
+Context-switching actors are used for actors that make use of the blocking API (see \S\,\ref{blocking-api}), but do not need to run in a separate thread.
 Context-switching and event-based actors are scheduled cooperatively in a thread pool.
 Thread-mapped actors can be used to opt-out of this cooperative scheduling.
 
@@ -17,8 +29,8 @@ The type of this pointer is \lstinline^event_based_actor*^ per default and \lsti
 When dealing with typed actors, the types are \lstinline^typed_event_based_actor<...>*^ and \lstinline^typed_blocking_actor<...>*^.
 
 \clearpage
-\subsection{Interface}
-\label{Sec::Actors::Interfaces}
+\subsection{API of \texttt{local\_actor}}
+\label{interface}
 
 \begin{lstlisting}
 class local_actor;
@@ -53,7 +65,7 @@ class local_actor;
   \hline
   \lstinline^void on_sync_failure(auto fun)^ & Sets a handler, i.e., a functor taking no arguments, for unexpected synchronous response messages (default action is to kill the actor for reason \lstinline^unhandled_sync_failure^) \\
   \hline
-  \lstinline^void monitor(actor whom)^ & Unidirectionally monitors \lstinline^whom^ (see Section \ref{Sec::Management::Monitors}) \\
+  \lstinline^void monitor(actor whom)^ & Unidirectionally monitors \lstinline^whom^ (see Section \ref{management-monitors}) \\
   \hline
   \lstinline^void demonitor(actor whom)^ & Removes a monitor from \lstinline^whom^ \\
   \hline
@@ -65,3 +77,7 @@ class local_actor;
   \hline
 \end{tabular*}
 }
+
+\subsection{Class-based Design}
+
+\subsection{Function-based Design}

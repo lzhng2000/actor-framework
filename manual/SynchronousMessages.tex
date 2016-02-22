@@ -1,11 +1,10 @@
 \section{Synchronous Communication}
-\label{Sec::Sync}
 
 \lib supports both asynchronous and synchronous communication. The latter is provided by the member function \lstinline^sync_send^.
 
 \begin{lstlisting}
-template<typename... Args>
-__unspecified__ sync_send(actor whom, Args&&... what);
+template<class... Ts>
+__unspecified__ sync_send(actor whom, Ts&&... xs);
 \end{lstlisting}
 
 A synchronous message is sent to the receiving actor's mailbox like any other (asynchronous) message. Only the response message is treated separately.
@@ -52,7 +51,7 @@ void foo(event_based_actor* self, actor testee) {
   // set handler for unexpected messages
   self->on_sync_failure([=] {
     aout(self) << "received unexpected synchronous response: "
-               << to_string(self->last_dequeued()) << endl;
+               << to_string(self->current_message()) << endl;
   });
   // set response handler by using "then"
   sync_send(testee, get_atom::value).then(

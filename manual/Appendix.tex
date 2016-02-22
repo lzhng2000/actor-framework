@@ -124,8 +124,8 @@ Instead of a thread-local pointer, you can now use the first argument in functor
 
 ~
 
-\lib now distinguishes between handles to actors, i.e., \lstinline^typed_actor<...>^ or simply \lstinline^actor^, and \emph{addresses} of actors, i.e., \lstinline^actor_addr^. The reason for this change is that each actor has a logical, (network-wide) unique address, which is used by the networking layer of \lib. Furthermore, for monitoring or linking, the address is all you need. However, the address is not sufficient for sending messages, because it doesn't have any type information. The function \lstinline^last_sender()^ now returns the \emph{address} of the sender.
-This means that previously valid code such as \lstinline^send(last_sender(), ...)^ will cause a compiler error.
+\lib now distinguishes between handles to actors, i.e., \lstinline^typed_actor<...>^ or simply \lstinline^actor^, and \emph{addresses} of actors, i.e., \lstinline^actor_addr^. The reason for this change is that each actor has a logical, (network-wide) unique address, which is used by the networking layer of \lib. Furthermore, for monitoring or linking, the address is all you need. However, the address is not sufficient for sending messages, because it doesn't have any type information. The function \lstinline^current_sender()^ now returns the \emph{address} of the sender.
+This means that previously valid code such as \lstinline^send(current_sender(), ...)^ will cause a compiler error.
 However, the recommended way of replying to messages is to return the result from the message handler.
 
 \paragraph{The API for typed actors is now similar to the API for untyped actors}
@@ -203,13 +203,13 @@ This feature has been removed without substitution.
 
 This release removes the (since 0.9 deprecated) \lstinline^cppa^ headers and deprecates all \lstinline^*_send_tuple^ versions (simply use the function without \lstinline^_tuple^ suffix). \lstinline^local_actor::on_exit^ once again became virtual.
 
-In case you were using the old \lstinline^cppa::maybes_description^ API, you can migrate to the new API based on \lstinline^extract^ (cf. \ref{Sec::Messages::ExtractOpts}).
+In case you were using the old \lstinline^cppa::maybes_description^ API, you can migrate to the new API based on \lstinline^extract^ (cf. \ref{extract-opts}).
 
 Most importantly, version 0.13 slightly changes \lstinline^last_dequeued^ and \lstinline^last_sender^.
 Both functions will now cause undefined behavior (dereferencing a \lstinline^nullptr^) instead of returning dummy values when accessed from outside a callback or after forwarding the current message.
 Besides, these function names were not a good choice in the first place, since ``last'' implies accessing data received in the past.
 As a result, both functions are now deprecated.
-Their replacements are named \lstinline^current_message^ and \lstinline^current_sender^ (cf. Section \ref{Sec::Actors::Interfaces}).
+Their replacements are named \lstinline^current_message^ and \lstinline^current_sender^ (see \S\,\ref{interface}).
 
 \subsubsection{0.13 $\Rightarrow$ 0.14}
 
@@ -217,6 +217,7 @@ The function \lstinline^timed_sync_send^ has been removed. It offered an alterna
 
 The policy classes \lstinline^broadcast^, \lstinline^random^, and \lstinline^round_robin^ in \lstinline^actor_pool^ were removed and replaced by factory functions using the same name.
 
-\subsection{0.14 $\Rightarrow$ 0.15}
+\clearpage
+\subsubsection{0.14 $\Rightarrow$ 0.15}
 
 
