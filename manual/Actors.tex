@@ -2,43 +2,41 @@
 \label{actors}
 
 \lib provides several actor implementations, each covering a particular use case.
-Most notably, actors differ in three characteristics: (1) dynamically or statically typed, (2) class-based or function-based, and (3) event-based or using blocking receives.
+Most notably, actors differ in three characteristics: (1) dynamically or statically typed, (2) class-based or function-based, and (3) using asynchronous event handlers or blocking receives.
 These three characteristics can be combined freely.
-For example, an actor can be dynamically typed, implemented as a class and use blocking receives.
+For example, an actor can utilize dynamically typing, implement a class and use blocking receives.
 In any case, \lstinline^local_actor^ is the common base class for all user-defined actors.
 
 Dynamically typed actors are more familiar to developers coming from Erlang or Akka.
 They (usually) enable faster prototyping but require extensive unit testing.
 Statically typed actors require more source code but enable the compiler to verify communication between actors.
 Since CAF supports both, however, developers can freely mix both kinds of actors to get the best of both worlds.
-A good rule of thumb is to make use of statically typing for actors that are visible across multiple translation units.
+A good rule of thumb is to make use of static type-checking for actors that are visible across multiple translation units.
 
-
-
-Hence, \lstinline^local_actor^ provides a common interface for actor operations like trapping exit messages or finishing execution.
-The default actor implementation in \lib is event-based.
-Event-based actors have a very small memory footprint and are thus very lightweight and scalable.
-Context-switching actors are used for actors that make use of the blocking API (see \S\,\ref{blocking-api}), but do not need to run in a separate thread.
-Context-switching and event-based actors are scheduled cooperatively in a thread pool.
-Thread-mapped actors can be used to opt-out of this cooperative scheduling.
-
-\subsection{Implicit \texttt{self} Pointer}
-
-When using a function or functor to implement an actor, the first argument \emph{can} be used to capture a pointer to the actor itself.
-The type of this pointer is \lstinline^event_based_actor*^ per default and \lstinline^blocking_actor*^ when using the \lstinline^blocking_api^ flag.
-When dealing with typed actors, the types are \lstinline^typed_event_based_actor<...>*^ and \lstinline^typed_blocking_actor<...>*^.
+Actors utilizing the blocking receive API always require an exclusive thread of execution. Event-based actors, on the other hand, are usually scheduled cooperatively and require only a few hundred byte of RAM. Developers can exclude---``detach''---event-based actors that potentially starve others from the cooperative scheduling while spawning it.
 
 \clearpage
-\subsection{API of \texttt{local\_actor}}
+\subsection{Common Actor Base Type}
 \label{interface}
 
-\begin{lstlisting}
-class local_actor;
-\end{lstlisting}
+The class \lstinline^local_actor^ is the base of all user-defined actors in \lib and defines all common operations.
+However, users of the library usually do not inherit from this class directly. Proper base classes for user-defined actors are \lstinline^event_based_actor^, \lstinline^blocking_actor^, etc..
+
+\lstinline^class local_actor;^
 
 {\small
 \begin{tabular*}{\textwidth}{m{0.45\textwidth}m{0.5\textwidth}}
-  \multicolumn{2}{m{\linewidth}}{\large{\textbf{Member functions}}\vspace{3pt}} \\
+  \multicolumn{2}{l}{\textbf{Types}\vspace{3pt}} \\
+  \hline
+  \lstinline^mailbox_type^ & A concurrent queue type. \\
+  \hline
+  \lstinline^error_handler^ & \lstinline^std::function<void (error&)>^ \\
+  \hline
+  \\
+  \multicolumn{2}{l}{\textbf{Constructors}\vspace{3pt}} \\
+  \hline
+  \lstinline^(actor_config&)^ & Constructs the actor using a config. \\
+  \hline
   \\
   \multicolumn{2}{l}{\textbf{Observers}\vspace{3pt}} \\
   \hline
@@ -59,25 +57,101 @@ class local_actor;
   \hline
   \lstinline^void trap_exit(bool enabled)^ & Enables or disables trapping of exit messages \\
   \hline
-  \lstinline^void join(const group& g)^ & Subscribes to group \lstinline^g^ \\
+  \lstinline^void join(const group&)^ & Subscribes to a group\\
   \hline
-  \lstinline^void leave(const group& g)^ & Unsubscribes group \lstinline^g^ \\
+  \lstinline^void leave(const group&)^ & Unsubscribes from a group \\
   \hline
-  \lstinline^void on_sync_failure(auto fun)^ & Sets a handler, i.e., a functor taking no arguments, for unexpected synchronous response messages (default action is to kill the actor for reason \lstinline^unhandled_sync_failure^) \\
+  \lstinline^void monitor(actor_addr)^ & Unidirectionally monitors an actor (see \S\,\ref{monitors}) \\
   \hline
-  \lstinline^void monitor(actor whom)^ & Unidirectionally monitors \lstinline^whom^ (see Section \ref{management-monitors}) \\
-  \hline
-  \lstinline^void demonitor(actor whom)^ & Removes a monitor from \lstinline^whom^ \\
-  \hline
-  \lstinline^bool has_sync_failure_handler()^ & Checks whether this actor has a user-defined sync failure handler \\
+  \lstinline^void demonitor(actor_addr whom)^ & Removes a monitor from \lstinline^whom^ \\
   \hline
   \lstinline^template <class F>^ \lstinline^void set_exception_handler(F f)^ & Sets a custom handler for uncaught exceptions \\
   \hline
-  \lstinline^void on_exit()^ & Can be overridden to add cleanup code that runs after an actor finished execution, e.g., to break cycles \\
+  \lstinline^void on_exit()^ & Can be overridden for performing cleanup code \\
+  \hline
+\end{tabular*}
+}
+\clearpage
+
+\subsection{Defining Messaging Interfaces}
+
+Statically typed actors require abstract messaging interfaces to allow the compiler to type-check actor communication.
+Interfaces in CAF are defined using the variadic template \lstinline^typed_actor<...>^, which defines the proper actor handle at the same time.
+Each template parameter defines one accepted input type via \lstinline^replies_to<X1,...Xn>::with<Y1...Yn>^.
+For inputs that do not generate outputs, \lstinline^reacts_to<X1,...,Xn>^ can be used as shortcut for \lstinline^replies_to<X1,...,Xn>::with<void>^. The example below defines a messaging interface for a simple calculator.
+
+\begin{lstlisting}
+using add_atom = atom_constant<atom("add")>;
+using sub_atom = atom_constant<atom("sub")>;
+
+using calculator = typed_actor<replies_to<add_atom, int, int>::with<int>,
+                               replies_to<sub_atom, int, int>::with<int>>;
+\end{lstlisting}
+
+It is not required to create a type alias such as \lstinline^calculator^, but it makes dealing with statically typed actors much easier.
+Also, a central alias definition eases refactoring later on.
+The class \lstinline^typed_actor<...>^ defines the member types shown below to grant convenient access to derived types.
+
+{\small
+\begin{tabular*}{\textwidth}{m{0.45\textwidth}m{0.5\textwidth}}
+  \textbf{Member Type or Template Alias} & \textbf{Definition} \\
+  \hline
+  \lstinline^behavior_type^ & A statically typed set of message handlers. \\
+  \hline
+  \lstinline^base^ & Possible base class for actors implementing this interface, i.e., \lstinline^typed_event_based_actor<...>^. \\
+  \hline
+  \lstinline^pointer^ & A pointer of type \lstinline^base*^. \\
+  \hline
+  \lstinline^template <class State>^\newline\lstinline^stateful_base^ & Alternative base class when working with the stateful actor API, see \S\,\ref{stateful-actor}. \\
+  \hline
+  \lstinline^template <class State>^\newline\lstinline^stateful_pointer^ & A pointer of type \lstinline^stateful_base<State>*^. \\
+  \hline
+  \lstinline^template <class... Ts>^\newline\lstinline^extend^ & A new \lstinline^typed_actor<...>^ combining the current interface with \lstinline^Ts...^. \\
+  \hline
+  \lstinline^template <class Other>^\newline\lstinline^extend_with^ & A new \lstinline^typed_actor<...>^ combining the current interface with the interface \lstinline^Other^. \\
   \hline
 \end{tabular*}
 }
 
-\subsection{Class-based Design}
+\subsection{Spawning Typed Actors}
+\label{sec:strong:spawn}
 
-\subsection{Function-based Design}
+Typed actors are spawned using the function \lstinline^spawn_typed^.
+The argument to this function call \emph{must} be a match expression as shown in the example below, because the runtime of \lib needs to evaluate the signature of each message handler.
+
+\begin{lstlisting}
+auto p0 = spawn_typed(
+  [](int a, int b) {
+   return static_cast<double>(a) * b;
+  },
+  [](double a, double b) {
+    return std::make_tuple(a * b, a / b);
+  }
+);
+// assign to identical type
+using full_type = typed_actor<
+                    replies_to<int, int>::with<double>,
+                    replies_to<double, double>::with<double, double>
+                  >;
+full_type p1 = p0;
+// assign to subtype
+using subtype1 = typed_actor<
+                   replies_to<int, int>::with<double>
+                 >;
+subtype1 p2 = p0;
+// assign to another subtype
+using subtype2 = typed_actor<
+                   replies_to<double, double>::with<double, double>
+                 >;
+subtype2 p3 = p0;
+\end{lstlisting}
+
+
+\subsection{Class-based Implementation}
+
+\subsection{Function-based Implementation}
+
+When using a function or function object to implement an actor, the first argument \emph{can} be used to capture a pointer to the actor itself.
+The type of this pointer is usually \lstinline^event_based_actor*^ or \lstinline^blocking_actor*^.
+When dealing with typed actors, the types are \lstinline^typed_event_based_actor<...>*^ and \lstinline^typed_blocking_actor<...>*^.
+

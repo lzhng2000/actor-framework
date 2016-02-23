@@ -43,7 +43,6 @@ But it is only allowed to skip arguments from left to right.
 on<int, float, double>() >> [](double) { /*...*/ }             // ok
 on<int, float, double>() >> [](float, double) { /*...*/ }      // ok
 on<int, float, double>() >> [](int, float, double) { /*...*/ } // ok
-
 on<int, float, double>() >> [](int i) { /*...*/ } // compiler error
 \end{lstlisting}
 
